@@ -47,7 +47,7 @@ namespace backend.Controllers
             return Ok(mappedToppers);
         }
 
-        //Create - del this
+        //Create - TODO: del this, not needed in the appv1
         [HttpPost]
         [Route("Create")]
         public async Task<IActionResult> CreateTopper([FromBody] TopperDto newTopperDto)
@@ -60,28 +60,47 @@ namespace backend.Controllers
         }
 
 
+        /// <summary>
+        /// Endpoint receives a list of toppers, each to be updated with purchase day - today. 
+        /// For each topperDto in the list, if its counterpart exists in the database, we map the dto to the DB object and then update the DB object.
+        /// </summary>
+        /// <param name="toppersUpdateDtos">list of topper Dtos to be updated in DB</param>
+        /// <returns>
+        ///     bad request, if toppersUpdateDtos list is null
+        ///     not found, if NONE of the IDs provided were mapped to a DB object. This is tracked by numUpdates.
+        ///     OK, if some or all toppers were updated
+        /// </returns>
         [HttpPut]
         [Route("Update")]
-        public IActionResult UpdateTopper([FromBody] TopperUpdateDto topperUpdateDto)
+        public IActionResult UpdateTopper([FromBody] TopperUpdateDto[] toppersUpdateDtos)
         {
 
-            if (topperUpdateDto == null)
+            if (toppersUpdateDtos == null)
             {
                 return BadRequest();
             }
 
-            Topper? existingTopper = _appDbContext.Toppers.FirstOrDefault(x => x.Id == topperUpdateDto.Id);
+            DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+            int numUpdates = 0;
 
-            if (existingTopper == null)
+            foreach (TopperUpdateDto topperUpdateDto in toppersUpdateDtos)
             {
-                return NotFound();
-            }
+                topperUpdateDto.ExpiryDate = today;
 
-            _mapper.Map(topperUpdateDto, existingTopper);
-            _appDbContext.Toppers.Update(existingTopper);
+                Topper? existingTopperDb = _appDbContext.Toppers.FirstOrDefault(topp => topp.Id == topperUpdateDto.Id);
+                if (existingTopperDb == null)
+                    continue;
+                _mapper.Map(topperUpdateDto, existingTopperDb);
+                _appDbContext.Toppers.Update(existingTopperDb);
+                numUpdates++;
+
+            }
             _appDbContext.SaveChanges();
 
-            return Ok($"Topper updated Ok");
+            if (numUpdates > 0)
+                return Ok($"Toppers updated Ok");
+            else 
+                return NotFound();
         }
     }
 }
