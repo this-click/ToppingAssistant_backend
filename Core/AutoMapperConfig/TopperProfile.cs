@@ -8,13 +8,13 @@ namespace backend.Core.AutoMapperConfig
     {
         public TopperProfile()
         {
-            // Get Toppers
+            // Get Toppers, converts from Topper to TopperDto
             CreateMap<Topper, TopperDto>();
 
-            // Create topper - del this
+            // Create topper - del this, converts from Dto to Topper
             CreateMap<TopperDto, Topper>();
 
-            // Update topper
+            // Update topper, converts from Dto to Topper
             CreateMap<TopperUpdateDto, Topper>();
         }
     }

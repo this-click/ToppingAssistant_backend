@@ -14,7 +14,7 @@ namespace backend
             // DB Config
             builder.Services.AddDbContext<AppDbContext>(options =>
             {
-                options.UseSqlServer(builder.Configuration.GetConnectionString("local"));
+                options.UseSqlServer(builder.Configuration.GetConnectionString("test"));
             });
 
             // AutoMapper Config
