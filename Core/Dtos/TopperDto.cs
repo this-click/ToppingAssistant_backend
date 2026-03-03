@@ -18,7 +18,7 @@ namespace backend.Core.Dtos
 
         public required TopperPriority Priority { get; set; }
 
-        public DateOnly? ExpiryDate { get; set; }
+        public DateOnly? PurchaseDate { get; set; }
 
         public DateOnly? FedDate { get; set; }
     }

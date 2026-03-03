@@ -114,7 +114,7 @@ namespace backend.Controllers
 
             foreach (TopperUpdateDto topperUpdateDto in toppersUpdateDtos)
             {
-                topperUpdateDto.ExpiryDate = today;
+                topperUpdateDto.PurchaseDate = today;
 
                 Topper? existingTopperDb = _appDbContext.Toppers.FirstOrDefault(topp => topp.Id == topperUpdateDto.Id);
                 if (existingTopperDb == null)
