@@ -4,6 +4,7 @@ using backend.Core.Dtos;
 using backend.Core.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace backend.Controllers
 {
@@ -43,6 +44,34 @@ namespace backend.Controllers
         {
             var recommendedToppers = await _appDbContext.Toppers.OrderBy(topper => topper.Priority).Take(7).ToListAsync();
             var mappedToppers = _mapper.Map<IEnumerable<TopperDto>>(recommendedToppers);
+
+            return Ok(mappedToppers);
+        }
+
+        /// <summary>
+        /// Get weekly schedule of toppers for the week.
+        /// 
+        /// Toppers are filtered by ExpiryDate, which means they have been bought at some point and are available to feed.
+        /// Later on, checks will be added so they are not expired.
+        /// 
+        /// The main sort is by priority, the lower the value the stronger the recommendation to feed soon.
+        /// The second sort criteria is ExpiryDate. The idea is that fresh foods should be fed before frozen foods, which have an older ExpiryDate value.
+        /// 
+        /// More or less, should be the same list as recommended toppers, except that ExpiryDate is not null.
+        /// 
+        /// </summary>
+        /// <returns>200 OK response if successful</returns>
+        [HttpGet]
+        [Route("Weekly")]
+        public async Task<ActionResult<IEnumerable<TopperDto>>> GetWeeklyToppers()
+        {
+            var weeklyToppers = await _appDbContext.Toppers
+                .Where(topper => topper.ExpiryDate != null)
+                .OrderBy(topper => topper.Priority)
+                .ThenByDescending(topper => topper.ExpiryDate)
+                .Take(7)
+                .ToListAsync();
+            var mappedToppers = _mapper.Map<IEnumerable<TopperDto>>(weeklyToppers);
 
             return Ok(mappedToppers);
         }
@@ -93,13 +122,13 @@ namespace backend.Controllers
                 _mapper.Map(topperUpdateDto, existingTopperDb);
                 _appDbContext.Toppers.Update(existingTopperDb);
                 numUpdates++;
-
             }
+
             _appDbContext.SaveChanges();
 
             if (numUpdates > 0)
                 return Ok($"Toppers updated Ok");
-            else 
+            else
                 return NotFound();
         }
     }
