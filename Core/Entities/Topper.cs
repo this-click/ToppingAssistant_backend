@@ -24,7 +24,7 @@ namespace backend.Core.Entities
         public required TopperPriority Priority { get; set; }
 
         //Optional, mutable
-        public DateOnly? ExpiryDate { get; set; }
+        public DateOnly? PurchaseDate { get; set; }
 
         //Optional, mutable
         public DateOnly? FedDate { get; set; }

@@ -51,13 +51,13 @@ namespace backend.Controllers
         /// <summary>
         /// Get weekly schedule of toppers for the week.
         /// 
-        /// Toppers are filtered by ExpiryDate, which means they have been bought at some point and are available to feed.
+        /// Toppers are filtered by PurchaseDate, which means they have been bought at some point and are available to feed.
         /// Later on, checks will be added so they are not expired.
         /// 
         /// The main sort is by priority, the lower the value the stronger the recommendation to feed soon.
-        /// The second sort criteria is ExpiryDate. The idea is that fresh foods should be fed before frozen foods, which have an older ExpiryDate value.
+        /// The second sort criteria is PurchaseDate. The idea is that fresh foods should be fed before frozen foods, which have an older PurchaseDate value.
         /// 
-        /// More or less, should be the same list as recommended toppers, except that ExpiryDate is not null.
+        /// More or less, should be the same list as recommended toppers, except that PurchaseDate is not null.
         /// 
         /// </summary>
         /// <returns>200 OK response if successful</returns>
@@ -66,9 +66,9 @@ namespace backend.Controllers
         public async Task<ActionResult<IEnumerable<TopperDto>>> GetWeeklyToppers()
         {
             var weeklyToppers = await _appDbContext.Toppers
-                .Where(topper => topper.ExpiryDate != null)
+                .Where(topper => topper.PurchaseDate != null)
                 .OrderBy(topper => topper.Priority)
-                .ThenByDescending(topper => topper.ExpiryDate)
+                .ThenByDescending(topper => topper.PurchaseDate)
                 .Take(7)
                 .ToListAsync();
             var mappedToppers = _mapper.Map<IEnumerable<TopperDto>>(weeklyToppers);
@@ -114,7 +114,7 @@ namespace backend.Controllers
 
             foreach (TopperUpdateDto topperUpdateDto in toppersUpdateDtos)
             {
-                topperUpdateDto.ExpiryDate = today;
+                topperUpdateDto.PurchaseDate = today;
 
                 Topper? existingTopperDb = _appDbContext.Toppers.FirstOrDefault(topp => topp.Id == topperUpdateDto.Id);
                 if (existingTopperDb == null)
