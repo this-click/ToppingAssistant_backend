@@ -66,9 +66,9 @@ namespace backend.Controllers
         public async Task<ActionResult<IEnumerable<TopperDto>>> GetWeeklyToppers()
         {
             var weeklyToppers = await _appDbContext.Toppers
-                .Where(topper => topper.ExpiryDate != null)
+                .Where(topper => topper.PurchaseDate != null)
                 .OrderBy(topper => topper.Priority)
-                .ThenByDescending(topper => topper.ExpiryDate)
+                .ThenByDescending(topper => topper.PurchaseDate)
                 .Take(7)
                 .ToListAsync();
             var mappedToppers = _mapper.Map<IEnumerable<TopperDto>>(weeklyToppers);
