@@ -11,6 +11,8 @@
     {
         public required Guid Id { get; init; }
 
-        public required DateOnly? PurchaseDate { get; set; }
+        public DateOnly? PurchaseDate { get; set; }
+
+        public required bool ThisWeek {  get; set; }
     }
 }

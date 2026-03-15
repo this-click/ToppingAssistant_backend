@@ -29,20 +29,25 @@ namespace backend.Controllers
         [Route("All")]
         public async Task<ActionResult<IEnumerable<TopperDto>>> GetAllToppers()
         {
-            var toppers = await _appDbContext.Toppers.OrderBy(topper => topper.Priority).ToListAsync();
+            var toppers = await _appDbContext.Toppers.OrderBy(topper => topper.Name).ToListAsync();
             var mappedToppers = _mapper.Map<IEnumerable<TopperDto>>(toppers);
             return Ok(mappedToppers);
         }
 
         /// <summary>
         /// Get recommended toppers for the week.
+        /// 
+        /// If a topper was never fed or if it was fed long ago, it's in the front of the list and will be recommended first.
         /// </summary>
         /// <returns>200 OK response if successful</returns>
         [HttpGet]
         [Route("Recommended")]
         public async Task<ActionResult<IEnumerable<TopperDto>>> GetRecommendedToppers()
         {
-            var recommendedToppers = await _appDbContext.Toppers.OrderBy(topper => topper.Priority).Take(7).ToListAsync();
+            var recommendedToppers = await _appDbContext.Toppers
+                .OrderBy(topper => topper.FedDate)
+                .ThenBy(topper => topper.Name)
+                .Take(7).ToListAsync();
             var mappedToppers = _mapper.Map<IEnumerable<TopperDto>>(recommendedToppers);
 
             return Ok(mappedToppers);
@@ -51,13 +56,8 @@ namespace backend.Controllers
         /// <summary>
         /// Get weekly schedule of toppers for the week.
         /// 
-        /// Toppers are filtered by PurchaseDate, which means they have been bought at some point and are available to feed.
+        /// Toppers are filtered by ThisWeek: if true, they are returned.
         /// Later on, checks will be added so they are not expired.
-        /// 
-        /// The main sort is by priority, the lower the value the stronger the recommendation to feed soon.
-        /// The second sort criteria is PurchaseDate. The idea is that fresh foods should be fed before frozen foods, which have an older PurchaseDate value.
-        /// 
-        /// More or less, should be the same list as recommended toppers, except that PurchaseDate is not null.
         /// 
         /// </summary>
         /// <returns>200 OK response if successful</returns>
@@ -66,9 +66,8 @@ namespace backend.Controllers
         public async Task<ActionResult<IEnumerable<TopperDto>>> GetWeeklyToppers()
         {
             var weeklyToppers = await _appDbContext.Toppers
-                .Where(topper => topper.PurchaseDate != null)
-                .OrderBy(topper => topper.Priority)
-                .ThenByDescending(topper => topper.PurchaseDate)
+                .Where(topper => topper.ThisWeek == true)
+                .OrderBy(topper => topper.Name)
                 .Take(7)
                 .ToListAsync();
             var mappedToppers = _mapper.Map<IEnumerable<TopperDto>>(weeklyToppers);
@@ -76,28 +75,18 @@ namespace backend.Controllers
             return Ok(mappedToppers);
         }
 
-        //Create - TODO: del this, not needed in the appv1
-        [HttpPost]
-        [Route("Create")]
-        public async Task<IActionResult> CreateTopper([FromBody] TopperDto newTopperDto)
-        {
-            Topper newTopper = _mapper.Map<Topper>(newTopperDto);
-            await _appDbContext.AddAsync(newTopper);
-            await _appDbContext.SaveChangesAsync();
-
-            return Ok("New topper created Ok.");
-        }
-
-
         /// <summary>
-        /// Receives a list of toppers, each to be updated with purchase day - today. 
+        /// Receives a list of toppers, each to be updated with:
+        ///     - PurchaseDate = today
+        ///     - ThisWeek = true
+        /// 
         /// For each topperDto in the list, if its counterpart exists in the database, we map the dto to the DB object and then update the DB object.
         /// </summary>
         /// <param name="buyToppersDtos">list of topper Dtos to be updated in DB</param>
         /// <returns>
-        ///     bad request, if toppersUpdateDtos list is null
-        ///     not found, if NONE of the IDs provided were mapped to a DB object. This is tracked by numUpdates.
-        ///     OK, if some or all toppers were updated
+        ///     - bad request, if toppersUpdateDtos list is null
+        ///     - not found, if NONE of the IDs provided were mapped to a DB object. This is tracked by numUpdates.
+        ///     - OK, if some or all toppers were updated
         /// </returns>
         [HttpPatch]
         [Route("Buy")]
@@ -115,6 +104,7 @@ namespace backend.Controllers
             foreach (BuyToppersDto buyTopperDto in buyToppersDtos)
             {
                 buyTopperDto.PurchaseDate = today;
+                buyTopperDto.ThisWeek = true;
 
                 Topper? existingTopperDb = _appDbContext.Toppers.FirstOrDefault(topp => topp.Id == buyTopperDto.Id);
                 if (existingTopperDb == null)
@@ -132,6 +122,19 @@ namespace backend.Controllers
                 return NotFound();
         }
 
+        /// <summary>
+        /// Feed a topper. When feeding:
+        ///     - FedDate = today
+        ///     - ThisWeek = false, it's no longer supposed to be fed this week.
+        /// </summary>
+        /// <param name="Id">ID of the topper</param>
+        /// <param name="feedTopperDto">feed topper DTO</param>
+        ///     - bad request, if feedTopperDto is null
+        ///     - bad request, if ID mismatch
+        ///     - not found, if topper not found in DB.
+        ///     - UnprocessableEntity, if PurchaseDate > today
+        ///     - UnprocessableEntity, if attempting to feed a topper that was not purchased first
+        ///     - OK, if topper was successfully fed
         [HttpPatch]
         [Route("Feed/{Id}")]
         public IActionResult FeedTopper(Guid Id, [FromBody] FeedTopperDto feedTopperDto)
@@ -146,6 +149,7 @@ namespace backend.Controllers
 
             DateOnly today = DateOnly.FromDateTime(DateTime.Now);
             feedTopperDto.FedDate = today;
+            feedTopperDto.ThisWeek = false;
 
             if (existingTopperDb == null)
                 return NotFound();
