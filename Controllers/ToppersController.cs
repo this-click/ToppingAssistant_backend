@@ -75,20 +75,8 @@ namespace backend.Controllers
             return Ok(mappedToppers);
         }
 
-        //Create - TODO: del this, not needed in the appv1
-        [HttpPost]
-        [Route("Create")]
-        public async Task<IActionResult> CreateTopper([FromBody] TopperDto newTopperDto)
-        {
-            Topper newTopper = _mapper.Map<Topper>(newTopperDto);
-            await _appDbContext.AddAsync(newTopper);
-            await _appDbContext.SaveChangesAsync();
-
-            return Ok("New topper created Ok.");
-        }
-
         /// <summary>
-        /// Receives a list of toppers, each to be updated with purchase day - today. 
+        /// Receives a list of toppers, each to be updated with:
         ///     - PurchaseDate = today
         ///     - ThisWeek = true
         /// 
@@ -96,9 +84,9 @@ namespace backend.Controllers
         /// </summary>
         /// <param name="buyToppersDtos">list of topper Dtos to be updated in DB</param>
         /// <returns>
-        ///     bad request, if toppersUpdateDtos list is null
-        ///     not found, if NONE of the IDs provided were mapped to a DB object. This is tracked by numUpdates.
-        ///     OK, if some or all toppers were updated
+        ///     - bad request, if toppersUpdateDtos list is null
+        ///     - not found, if NONE of the IDs provided were mapped to a DB object. This is tracked by numUpdates.
+        ///     - OK, if some or all toppers were updated
         /// </returns>
         [HttpPatch]
         [Route("Buy")]
@@ -134,6 +122,19 @@ namespace backend.Controllers
                 return NotFound();
         }
 
+        /// <summary>
+        /// Feed a topper. When feeding:
+        ///     - FedDate = today
+        ///     - ThisWeek = false, it's no longer supposed to be fed this week.
+        /// </summary>
+        /// <param name="Id">ID of the topper</param>
+        /// <param name="feedTopperDto">feed topper DTO</param>
+        ///     - bad request, if feedTopperDto is null
+        ///     - bad request, if ID mismatch
+        ///     - not found, if topper not found in DB.
+        ///     - UnprocessableEntity, if PurchaseDate > today
+        ///     - UnprocessableEntity, if attempting to feed a topper that was not purchased first
+        ///     - OK, if topper was successfully fed
         [HttpPatch]
         [Route("Feed/{Id}")]
         public IActionResult FeedTopper(Guid Id, [FromBody] FeedTopperDto feedTopperDto)
