@@ -131,5 +131,34 @@ namespace backend.Controllers
             else
                 return NotFound();
         }
+
+        [HttpPatch]
+        [Route("Feed/{Id}")]
+        public IActionResult FeedTopper(Guid Id, [FromBody] FeedTopperDto feedTopperDto)
+        {
+
+            if (feedTopperDto == null)
+                return BadRequest();
+            if (Id != feedTopperDto.Id)
+                return BadRequest();
+
+            Topper? existingTopperDb = _appDbContext.Toppers.FirstOrDefault(topp => topp.Id == feedTopperDto.Id);
+
+            DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+            feedTopperDto.FedDate = today;
+
+            if (existingTopperDb == null)
+                return NotFound();
+            if (existingTopperDb.PurchaseDate != null && existingTopperDb.PurchaseDate > today)
+                return UnprocessableEntity("Error: Purchase date is more recent than Fed date.");
+            if (existingTopperDb.PurchaseDate == null)
+                return UnprocessableEntity("Error: There is no Purchase date information in the system.");
+
+            _mapper.Map(feedTopperDto, existingTopperDb);
+            _appDbContext.Toppers.Update(existingTopperDb);
+            _appDbContext.SaveChanges();
+
+            return Ok($"Fed topper Ok: '{existingTopperDb.Id}'.");
+        }
     }
 }

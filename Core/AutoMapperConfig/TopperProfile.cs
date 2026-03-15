@@ -16,6 +16,9 @@ namespace backend.Core.AutoMapperConfig
 
             // Buy toppers, converts from Dto to Topper
             CreateMap<BuyToppersDto, Topper>();
+
+            // Feed topper, converts from Dto to Topper
+            CreateMap<FeedTopperDto, Topper>();
         }
     }
 }
