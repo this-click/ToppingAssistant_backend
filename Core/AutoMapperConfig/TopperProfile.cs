@@ -14,8 +14,11 @@ namespace backend.Core.AutoMapperConfig
             // Create topper - del this, converts from Dto to Topper
             CreateMap<TopperDto, Topper>();
 
-            // Update topper, converts from Dto to Topper
-            CreateMap<TopperUpdateDto, Topper>();
+            // Buy toppers, converts from Dto to Topper
+            CreateMap<BuyToppersDto, Topper>();
+
+            // Feed topper, converts from Dto to Topper
+            CreateMap<FeedTopperDto, Topper>();
         }
     }
 }

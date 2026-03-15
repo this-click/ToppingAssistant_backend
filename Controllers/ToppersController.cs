@@ -85,26 +85,26 @@ namespace backend.Controllers
             await _appDbContext.AddAsync(newTopper);
             await _appDbContext.SaveChangesAsync();
 
-            return Ok("New topper created Ok");
+            return Ok("New topper created Ok.");
         }
 
 
         /// <summary>
-        /// Endpoint receives a list of toppers, each to be updated with purchase day - today. 
+        /// Receives a list of toppers, each to be updated with purchase day - today. 
         /// For each topperDto in the list, if its counterpart exists in the database, we map the dto to the DB object and then update the DB object.
         /// </summary>
-        /// <param name="toppersUpdateDtos">list of topper Dtos to be updated in DB</param>
+        /// <param name="buyToppersDtos">list of topper Dtos to be updated in DB</param>
         /// <returns>
         ///     bad request, if toppersUpdateDtos list is null
         ///     not found, if NONE of the IDs provided were mapped to a DB object. This is tracked by numUpdates.
         ///     OK, if some or all toppers were updated
         /// </returns>
-        [HttpPut]
-        [Route("Update")]
-        public IActionResult UpdateTopper([FromBody] TopperUpdateDto[] toppersUpdateDtos)
+        [HttpPatch]
+        [Route("Buy")]
+        public IActionResult BuyToppers([FromBody] BuyToppersDto[] buyToppersDtos)
         {
 
-            if (toppersUpdateDtos == null)
+            if (buyToppersDtos == null)
             {
                 return BadRequest();
             }
@@ -112,14 +112,14 @@ namespace backend.Controllers
             DateOnly today = DateOnly.FromDateTime(DateTime.Now);
             int numUpdates = 0;
 
-            foreach (TopperUpdateDto topperUpdateDto in toppersUpdateDtos)
+            foreach (BuyToppersDto buyTopperDto in buyToppersDtos)
             {
-                topperUpdateDto.PurchaseDate = today;
+                buyTopperDto.PurchaseDate = today;
 
-                Topper? existingTopperDb = _appDbContext.Toppers.FirstOrDefault(topp => topp.Id == topperUpdateDto.Id);
+                Topper? existingTopperDb = _appDbContext.Toppers.FirstOrDefault(topp => topp.Id == buyTopperDto.Id);
                 if (existingTopperDb == null)
                     continue;
-                _mapper.Map(topperUpdateDto, existingTopperDb);
+                _mapper.Map(buyTopperDto, existingTopperDb);
                 _appDbContext.Toppers.Update(existingTopperDb);
                 numUpdates++;
             }
@@ -127,9 +127,38 @@ namespace backend.Controllers
             _appDbContext.SaveChanges();
 
             if (numUpdates > 0)
-                return Ok($"Toppers updated Ok");
+                return Ok($"Toppers bought Ok.");
             else
                 return NotFound();
+        }
+
+        [HttpPatch]
+        [Route("Feed/{Id}")]
+        public IActionResult FeedTopper(Guid Id, [FromBody] FeedTopperDto feedTopperDto)
+        {
+
+            if (feedTopperDto == null)
+                return BadRequest();
+            if (Id != feedTopperDto.Id)
+                return BadRequest();
+
+            Topper? existingTopperDb = _appDbContext.Toppers.FirstOrDefault(topp => topp.Id == feedTopperDto.Id);
+
+            DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+            feedTopperDto.FedDate = today;
+
+            if (existingTopperDb == null)
+                return NotFound();
+            if (existingTopperDb.PurchaseDate != null && existingTopperDb.PurchaseDate > today)
+                return UnprocessableEntity("Error: Purchase date is more recent than Fed date.");
+            if (existingTopperDb.PurchaseDate == null)
+                return UnprocessableEntity("Error: There is no Purchase date information in the system.");
+
+            _mapper.Map(feedTopperDto, existingTopperDb);
+            _appDbContext.Toppers.Update(existingTopperDb);
+            _appDbContext.SaveChanges();
+
+            return Ok($"Fed topper Ok: '{existingTopperDb.Id}'.");
         }
     }
 }
