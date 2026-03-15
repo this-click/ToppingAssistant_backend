@@ -1,6 +1,4 @@
-﻿using backend.Core.Enums;
-
-namespace backend.Core.Entities
+﻿namespace backend.Core.Entities
 {
     /// <summary>
     /// Blueprint of Topper objects. 
@@ -20,8 +18,8 @@ namespace backend.Core.Entities
         //Mandatory, immutable. Represents kilo calories per 100g.
         public required int Calories { get; init; }
 
-        //Mandatory, mutable
-        public required TopperPriority Priority { get; set; }
+        //Optional, mutable
+        public bool ThisWeek { get; set; }
 
         //Optional, mutable
         public DateOnly? PurchaseDate { get; set; }

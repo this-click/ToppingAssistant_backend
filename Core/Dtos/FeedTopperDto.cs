@@ -13,6 +13,8 @@
     {
         public required Guid Id { get; init; }
 
-        public required DateOnly? FedDate { get; set; }
+        public DateOnly? FedDate { get; set; }
+
+        public required bool ThisWeek { get; set; }
     }
 }

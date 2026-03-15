@@ -1,6 +1,4 @@
-﻿using backend.Core.Enums;
-
-namespace backend.Core.Dtos
+﻿namespace backend.Core.Dtos
 {
     /// <summary>
     /// Data Transport Object for Get request.
@@ -16,7 +14,7 @@ namespace backend.Core.Dtos
         // Only set once
         public required int Calories { get; init; }
 
-        public required TopperPriority Priority { get; set; }
+        public bool ThisWeek { get; set; }
 
         public DateOnly? PurchaseDate { get; set; }
 
